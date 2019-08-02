@@ -1,31 +1,32 @@
 var http = require('http'),
     fs = require('fs'),
     httpProxy = require('http-proxy'),
-	request = require("request-promise") ;
-	
-const HTTPPORT = 8000;
-const PROXYPORT = 9000;
-const HOST = '0.0.0.0';
+	request = require('request-promise'),
+	dotenv = require('dotenv').config() ;
 
-var apiProxy = httpProxy.createProxyServer({target:'http://0.0.0.0:9000'}).listen(8000);
+if(dotenv.error){
+	throw dotenv.error
+}
+var apiProxy = httpProxy.createProxyServer({target: 'http://0.0.0.0:9000'}).listen(8000);    //'http://0.0.0.0:9000'
 
 var dataProp = {city:"", state: "", cwa: "", geoLat: "", geoLon: "", gridX:"", gridY:"", elevation:"", forecastUri:""};
 
 var options = {
 	  uri:  '',
-	  host: 'api.weather.gov',
+	  host: process.env.REQ_HOST,
 	  port: 443,
 	  path: '',
 	  method: "GET",
-	  key: fs.readFileSync('./myfile.pem'),
-	  cert: fs.readFileSync('./myfile.crt'),
+	  key: fs.readFileSync(process.env.REQ_KEY_FILE_PATH),           //'./myfile.pem'
+	  cert: fs.readFileSync(preocess.env.REQ_CER_FILE_PATH),                //'./myfile.crt'
 	  json: true,
 	  headers: {
-		  'token': 'DegDwzrxbuaBcvRnxByISaKTuILimTHg',
+		  'token': process.env.REQ_TOKEN,
 		  'User-Agent': 'request',
 		  'accept' : 'application/json'
 	  }
 	};
+
 
 var weather = {
 
@@ -33,8 +34,9 @@ var weather = {
 
 	getForecastProps: function(geoPoints){
 
-		options.uri = 'https://api.weather.gov/points/'.concat(geoPoints);
-        options.path = 'points/'.concat(geoPoints);
+		 
+		options.uri = process.env.REQ_PROTOCOL.concat(process.env.REQ_HOST).concat(process.env.REQ_PATH).concat(geoPoints);        //'https://api.weather.gov/points/'
+        options.path = process.env.REQ_PATH.concat(geoPoints);        //'points/'
 
 		return request(options);
 
@@ -71,7 +73,7 @@ var weather = {
 
 
 		options.uri = forecastUri;
-		options.path = 'gridpoints/'.concat(cwa).concat('/').concat(gridX).concat(',').concat(gridY).concat('/forecast');
+		options.path = process.env.REQ_GRIDPOINT_PATH.concat(cwa).concat('/').concat(gridX).concat(',').concat(gridY).concat('/forecast');
 
 		console.log("forecast options.path :", options.path);
         
@@ -122,8 +124,8 @@ http.createServer(function (req, res) {
 		   res.writeHead(200, { 'Content-Type': 'application/json' });
 
 	       ///res.write('request successfully proxied! for '  + '\n' + JSON.stringify(dataProp, true, 2));
-	      // res.write(JSON.stringify(dataProp, true, 2));
-	      var json = JSON.stringify(dataProp, true, 2);
+	       // res.write(JSON.stringify(dataProp, true, 2));
+	       var json = JSON.stringify(dataProp, true, 2);
 	        
 	       res.end(json);
 
